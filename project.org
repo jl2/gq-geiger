@@ -1,0 +1,29 @@
+* gq-geiger
+
+** About
+A package to control GQ Geiger counters.
+
+** Example
+#+BEGIN_SRC lisp
+  (ql:quickload :gq-geiger)
+  (format nil "Version: ~a~%CPM: ~a~%" (gq:get-version) (gq:get-cpm))
+#+END_SRC
+
+#+RESULTS:
+: Version: GMC-600+Re 2.52
+: CPM: 78
+
+** License
+ISC
+
+Copyright (c) 2024 Jeremiah LaRocco <jeremiah_larocco@fastmail.com>
+
+
+
+* Plan
+** TODO Maybe: macro for creating functions from a table of name/args/return-type
+** TODO Maybe: Implement low level functions for calling commands (maybe by using the macro mentioned above?)
+** TODO Implement a high level API of some kind
+** TODO Decide what that high level API should be
+** TODO Integrate with Racebox tools somehow
+
