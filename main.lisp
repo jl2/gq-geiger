@@ -13,11 +13,18 @@
 ;; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ;; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+(in-package :gq-geiger)
+
 (defun main (args)
-  
-  (format t "Hello!  This tool is REPL only for now.~%")
-  (format t "Args: ~{~a~^ ~}~%" args)
-  (let ((counter (geiger :path (car args))))
-    (format t "Version: ~s~%" (get-version counter))
-    (format t "Current CPM: ~d" (get-cpm counter)))
+  (cond
+    ((find "--help" args)
+     (format t "Print GQ geiger counter version and current CPM count to stdout.~%
+First command line parameter is the path to the device in /dev/, probably /dev/ttyUSB*.~%
+If no parameter is given, the first /dev/ttyUSB device is used. ~%~%"))
+    (t
+     (let ((counter (if args
+                        (gq:geiger :path (car args))
+                        (gq:find-geiger))))
+       (format t "Version: ~s~%" (gq:get-version counter))
+       (format t "Current CPM: ~d" (gq:get-cpm counter)))))
   0)

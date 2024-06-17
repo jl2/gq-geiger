@@ -82,7 +82,8 @@
   (declare
    (optimize (speed 3) (space 0) (safety 0) (debug 0))
    (type (simple-array (unsigned-byte 8)) arr))
-  (the (unsigned-byte 16) (+ (* (aref arr (1+ idx)) 256) (aref arr idx))))
+  (the (unsigned-byte 16) (+ (ash (aref arr idx) 8)
+                             (aref arr (1+ idx)))))
 
 
 (defun get-u4 (arr idx)
@@ -186,6 +187,12 @@ Where nil means 'no value'.  '(:string n) an '(:array n) can have any size up to
                 "REBOOT"
                 nil))
 
+(defun power-off (&optional (geiger (find-geiger)))
+  "Power off the geiger counter."
+  (send-command geiger
+                "POWEROFF"
+                nil))
+
 (defun get-cpm (&optional (geiger (find-geiger)))
   "Return the current counts per minute (CPM) reading."
   (send-command geiger
@@ -204,3 +211,83 @@ Where nil means 'no value'.  '(:string n) an '(:array n) can have any size up to
                 "GETCFG"
                 '(:array 512)))
 
+(defun get-gyro (&optional (geiger (find-geiger)))
+  "Return a 512 byte configuration data buffer."
+  (let* ((raw-value (send-command geiger
+                                 "GETGYRO"
+                                 '(:array 7)))
+         (x (get-u2 raw-value 0))
+         (y (get-u2 raw-value 2))
+         (z (get-u2 raw-value 4)))
+    (values  (list x y z)
+             raw-value)))
+
+(defun get-date-time (&optional (geiger (find-geiger)))
+  "Return the current year, month, day, hour, minute, and second values."
+  (let* ((raw-values (send-command geiger
+                                  "GETDATETIME"
+                                  '(:array 7)))
+        (universal (encode-universal-time (aref raw-values 5)
+                                          (aref raw-values 4)
+                                          (aref raw-values 3)
+                                          (aref raw-values 2)
+                                          (aref raw-values 1)
+                                          (aref raw-values 0))))
+    (values (local-time:universal-to-timestamp universal)
+            universal
+            raw-values)))
+
+(defun set-timestamp (timestamp &key
+                                  (geiger (find-geiger)))
+  "Set the date and time using a local-time:timestamp."
+  (multiple-value-bind
+        (second minute hour day month year) (cl:decode-universal-time (local-time:timestamp-to-universal timestamp))
+    (set-date-time :atomic t
+                   :year year
+                   :month month
+                   :day day
+                   :hour hour
+                   :minute minute
+                   :second second
+                   :geiger geiger)))
+
+(defun set-date-time (&key
+                        (year :now)
+                        (month :now)
+                        (day :now)
+                        (hour :now)
+                        (minute :now)
+                        (second :now)
+                        (atomic t)
+                        (geiger (find-geiger)))
+  "Set the date and time on the counter.  When atomic is non-nil the time is set with one SETDATETIME command.
+When atomic=nil individual SETDATE** and SETTIME** commands are used."
+
+  (multiple-value-bind
+        (second-now minute-now hour-now day-now month-now year-now) (cl:decode-universal-time (cl:get-universal-time))
+    (cond (atomic
+           (send-command geiger
+                         "SETDATETIME"
+                         :byte
+                         (format nil
+                                 "~2,'0x~2,'0x~2,'0x~2,'0x~2,'0x~2,'0x"
+                                 (mod (if (eq year :now)
+                                          year-now year)
+                                      2000)
+                                 (if (eq  month :now)  month-now month)
+                                 (if (eq  day :now)  day-now day)
+                                 (if (eq  hour :now)  hour-now hour)
+                                 (if (eq  minute :now)  minute-now minute)
+                                 (if (eq  second :now)  second-now second))))
+
+          (t
+           (loop :for (cmd . param) :in `(("DATEYY" . ,(if (eq year :now) year-now year))
+                                          ("DATEMM" . ,(if (eq  month :now)  month-now month))
+                                          ("DATEDD" . ,(if (eq  day :now)  day-now day))
+                                          ("TIMEHH" . ,(if (eq  hour :now)  hour-now hour))
+                                          ("TIMEMM" . ,(if (eq  minute :now)  minute-now minute))
+                                          ("TIMESS" . ,(if (eq  second :now)  second-now second)))
+                 :do
+                    (send-command geiger
+                                  (format nil "SET~a" cmd)
+                                  :byte param))))))

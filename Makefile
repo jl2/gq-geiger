@@ -2,7 +2,7 @@
 
 gq-geiger: manifest.txt *.lisp *.asd
 	buildapp --output gq-geiger \
-             --manifest-file ~/src/lisp/gq-geiger/manifest.txt \
+             --manifest-file manifest.txt \
              --load-system asdf \
              --load-system sb-posix \
              --load-system alexandria \
@@ -21,7 +21,7 @@ manifest.txt: *.asd
          --non-interactive \
          --load ~/quicklisp/setup.lisp \
          --eval '(ql:quickload :alexandria)' \
-		 --eval '(ql:write-asdf-manifest-file "~/src/lisp/gq-geiger/manifest.txt")'
+		 --eval '(ql:write-asdf-manifest-file "manifest.txt")'
 
 clean:
 	rm -Rf manifest.txt  *.fasl

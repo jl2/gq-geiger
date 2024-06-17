@@ -20,7 +20,7 @@
   :version "0.0.1"
   :serial t
 
-  :depends-on (#:alexandria #:cserial-port #:sqlite)
+  :depends-on (#:alexandria #:cserial-port #:sqlite #:local-time)
 
   :components ((:file "package")
                (:file "main")

@@ -23,6 +23,10 @@
            #:geiger
            #:get-version
            #:get-cpm
+           #:power-off
+           #:get-date-time
+           #:set-date-time
+           #:set-timestamp
            #:get-volt
            #:get-config
            #:reboot
